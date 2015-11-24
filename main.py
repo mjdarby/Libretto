@@ -109,6 +109,61 @@ class Application(Frame):
         self.pack()
         self.buildWidgets()
 
+    def format_scene_headings(self, text_entry):
+        start = "1.0"
+        while 1:
+            pos = text_entry.search(r'^(\..+|[Ii][Nn][Tt]|[Ee][Xx][Tt]|[Ee][Ss][Tt]|[Ii][Nn][Tt]\.?/[Ee][Xx][Tt]|[Ii]/[Ee])$', start, regexp=True, stopindex=END)
+            if not pos:
+                break
+            line_no = pos[0:pos.index(".")]
+            my_start = line_no+".0"
+            my_end = line_no+".end"
+            text_entry.tag_add("scene_heading", my_start, my_end)
+            start = pos + "+1c"
+
+    def format_characters(self, text_entry):
+        start = "1.0"
+        while 1:
+            pos = text_entry.search(r'^[A-Z]+$', start, regexp=True, stopindex=END)
+            if not pos:
+                break
+            line_no = pos[0:pos.index(".")]
+            my_start = line_no+".0"
+            my_end = line_no+".end"
+            text_entry.tag_add("character", my_start, my_end)
+            start = pos + "+1c"
+
+    def format_dialogue_and_parantheticals(self, text_entry):
+        start = "2.0"
+        while 1:
+            # Check previous line was dialogue, paranthentical or character
+            this_line_no = int(start[0:start.index(".")])
+            last_line_no = str(this_line_no - 1)
+            this_line_no = str(this_line_no)
+            if (text_entry.tag_nextrange("character", last_line_no+".0", last_line_no+".end")):
+                my_start = this_line_no+".0"
+                my_end = this_line_no+".end"
+                text_entry.tag_add("dialogue", my_start, my_end)
+
+            start = text_entry.index(start + " lineend +1c")
+            print(start)
+            next_line_no = int(start[0:start.index(".")])
+            last_line_no = text_entry.index(END)
+            last_line_no = int(last_line_no[0:last_line_no.index(".")])
+            if next_line_no >= last_line_no:
+                break
+
+    def my_tag_lower(self, text_entry, tag):
+        try:
+            text_entry.tag_lower(tag)
+        except:
+            pass
+
+    def order_tags(self, text_entry):
+        # Scene first, then character, then dialogue, then parantheses
+        self.my_tag_lower(text_entry, "scene_heading")
+        self.my_tag_lower(text_entry, "character")
+
     def process_text(self, event):
         text_entry = self.containing_frame.viewing_frame.text_entry
 
@@ -118,19 +173,13 @@ class Application(Frame):
         text_entry.mark_set(INSERT, self.containing_frame.writing_frame.text_entry.index(INSERT))
         text_entry.config(state=DISABLED)
 
-        start = "1.0"
-        while 1:
-            pos = text_entry.search(r'^[A-Z]+$', start, regexp=True, stopindex=END)
-            if not pos:
-                break
-            line_no = pos[0:pos.index(".")]
-            my_start = line_no+".0"
-            my_end = line_no+".end"
-            print(pos)
-            print(my_start)
-            text_entry.tag_configure("character", font=("Courier New", 12, "bold"), justify="center")
-            text_entry.tag_add("character", my_start, my_end)
-            start = pos + "+1c"
+        text_entry.tag_configure("scene_heading", font=("Courier New", 12, "bold"), justify="left")
+        text_entry.tag_configure("character", font=("Courier New", 12, "bold"), justify="center")
+        text_entry.tag_configure("dialogue", font=("Courier New", 12), justify="center")
+        self.format_scene_headings(text_entry)
+        self.format_characters(text_entry)
+        self.format_dialogue_and_parantheticals(text_entry)
+        self.order_tags(text_entry)
 
     def buildWidgets(self):
         self.containing_frame = Frame(self)
