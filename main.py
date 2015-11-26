@@ -2,6 +2,8 @@ import re
 from tkinter import *
 from tkinter.ttk import *
 
+import fpdf
+
 class ModifiedMixin:
     '''
     Class to allow a Tkinter Text widget to notice when it's modified.
@@ -146,7 +148,7 @@ class Application(Frame):
     def format_characters(self, text_entry):
         start = "1.0"
         while 1:
-            pos = text_entry.search(r'^[A-Z ]+$', start, regexp=True, stopindex=END)
+            pos = text_entry.search(r'^(@.*|[A-Z \(\)\'\.]+)$', start, regexp=True, stopindex=END)
             if not pos:
                 break
             line_no = pos[0:pos.index(".")]
@@ -243,6 +245,69 @@ class Application(Frame):
         self.format_the_rest(text_entry)
         self.order_tags(text_entry)
 
+    def tag_to_left_margin(self, tag):
+        if tag == "scene_heading":
+            return 1.5
+        if tag == "character":
+            return 4.2
+        if tag == "parenthetical":
+            return 3.6
+        if tag == "dialogue":
+            return 2.9
+        if tag == "transition":
+            return 6
+        if tag == "action":
+            return 1.5
+        return 1.5
+
+    def tag_to_width(self, tag):
+        if tag == "scene_heading":
+            return 6.0
+        if tag == "character":
+            return 3.3
+        if tag == "parenthetical":
+            return 2.0
+        if tag == "dialogue":
+            return 3.3
+        if tag == "transition":
+            return 1.5
+        if tag == "action":
+            return 6.0
+        return 6.0
+
+
+    def pdf(self):
+        text_entry = self.containing_frame.writing_frame.text_entry
+
+        pdf = fpdf.FPDF('P', 'in', format='letter')
+        pdf.set_margins(0, 1, 1)
+        pdf.add_page()
+        pdf.set_font("Courier", size=12)
+
+        start = "1.0"
+        while 1:
+            this_line_no = str(int(start[0:start.index(".")]))
+            tags = text_entry.tag_names(start)
+            best_tag = tags[-1] if tags else []
+            width = 6
+            left_margin = 1.5
+            if (best_tag):
+                print(best_tag)
+                width = self.tag_to_width(best_tag)
+                left_margin = self.tag_to_left_margin(best_tag)
+            text=text_entry.get(start, this_line_no+".end")
+            pdf.set_x(left_margin)
+            pdf.multi_cell(width, 0.17, txt=text)
+            start = text_entry.index(start + " lineend +1c")
+            next_line_no = int(start[0:start.index(".")])
+            last_line_no = text_entry.index(END)
+            last_line_no = int(last_line_no[0:last_line_no.index(".")])
+            if next_line_no >= last_line_no:
+                break
+
+        pdf.output("output.pdf")
+        print("Done printing")
+
     def buildWidgets(self):
         self.containing_frame = Frame(self)
         self.containing_frame.writing_frame = WritingFrame(self.containing_frame)
@@ -264,7 +329,11 @@ class Application(Frame):
         self.quit = Button(self,
                            text="Quit",
                            command=root.destroy)
+        self.pdf = Button(self,
+                          text="PDF",
+                          command=self.pdf)
         self.quit.pack(side="bottom")
+        self.pdf.pack(side="bottom")
 
 
 if __name__ == "__main__":
