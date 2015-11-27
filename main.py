@@ -233,7 +233,7 @@ class Application(Frame):
                 align = self.tag_to_align(best_tag)
                 if (best_tag == "character" or best_tag == "scene_heading"):
                     if (pdf.y + 0.17 * 2 > pdf.page_break_trigger):
-                        pdf.multi_cell(width, 0.17, txt="", align=align)
+                        pdf.multi_cell(width, 0.17*2, txt="", align=align)
             text=text_entry.get(start, this_line_no+".end")
             pdf.set_x(left_margin)
             pdf.multi_cell(width, 0.17, txt=text, align=align)
