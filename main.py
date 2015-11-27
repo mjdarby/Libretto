@@ -1,74 +1,9 @@
 import re
 from tkinter import *
 from tkinter.ttk import *
+from mixin import ModifiedMixin
 
 import fpdf
-
-class ModifiedMixin:
-    '''
-    Class to allow a Tkinter Text widget to notice when it's modified.
-
-    To use this mixin, subclass from Tkinter.Text and the mixin, then write
-    an __init__() method for the new class that calls _init().
-
-    Then override the beenModified() method to implement the behavior that
-    you want to happen when the Text is modified.
-    '''
-
-    def _init(self):
-        '''
-        Prepare the Text for modification notification.
-        '''
-
-        # Clear the modified flag, as a side effect this also gives the
-        # instance a _resetting_modified_flag attribute.
-        self.clearModifiedFlag()
-
-        # Bind the <<Modified>> virtual event to the internal callback.
-        self.bind('<<Modified>>', self._beenModified)
-
-    def _beenModified(self, event=None):
-        '''
-        Call the user callback. Clear the Tk 'modified' variable of the Text.
-        '''
-
-        # If this is being called recursively as a result of the call to
-        # clearModifiedFlag() immediately below, then we do nothing.
-        if self._resetting_modified_flag: return
-
-        # Clear the Tk 'modified' variable.
-        self.clearModifiedFlag()
-
-        # Call the user-defined callback.
-        self.beenModified(event)
-
-    def beenModified(self, event=None):
-        '''
-        Override this method in your class to do what you want when the Text
-        is modified.
-        '''
-        pass
-
-    def clearModifiedFlag(self):
-        '''
-        Clear the Tk 'modified' variable of the Text.
-
-        Uses the _resetting_modified_flag attribute as a sentinel against
-        triggering _beenModified() recursively when setting 'modified' to 0.
-        '''
-
-        # Set the sentinel.
-        self._resetting_modified_flag = True
-
-        try:
-
-            # Set 'modified' to 0.  This will also trigger the <<Modified>>
-            # virtual event which is why we need the sentinel.
-            self.tk.call(self._w, 'edit', 'modified', 0)
-
-        finally:
-            # Clean the sentinel.
-            self._resetting_modified_flag = False
 
 class ModifiedText(ModifiedMixin, Text):
     def __init__(self, *a, **b):
@@ -148,7 +83,7 @@ class Application(Frame):
     def format_characters(self, text_entry):
         start = "1.0"
         while 1:
-            pos = text_entry.search(r'^(@.*|[A-Z \(\)\'\.]+)$', start, regexp=True, stopindex=END)
+            pos = text_entry.search(r'^(@.*|[A-Z \(\)\'\.,]+)$', start, regexp=True, stopindex=END)
             if not pos:
                 break
             line_no = pos[0:pos.index(".")]
@@ -225,14 +160,6 @@ class Application(Frame):
         text_entry.tag_configure("action", font=("Courier New", 12), lmargin1="1.5i", lmargin2="1.5i", rmargin="1i")
 
     def process_text(self, event):
-#        text_entry = self.containing_frame.viewing_frame.text_entry
-
-#        text_entry.config(state=NORMAL)
-#        self.containing_frame.viewing_frame.text_entry.delete("1.0", "end-1c")
-#        self.containing_frame.viewing_frame.text_entry.insert(INSERT, self.containing_frame.writing_frame.text_entry.get("1.0", "end-1c"))
-#        text_entry.mark_set(INSERT, self.containing_frame.writing_frame.text_entry.index(INSERT))
-#        text_entry.config(state=DISABLED)
-
         text_entry = self.containing_frame.writing_frame.text_entry
 
         self.wipe_tags(text_entry)
@@ -301,10 +228,12 @@ class Application(Frame):
             left_margin = 1.5
             align='L'
             if (best_tag):
-                print(best_tag)
                 width = self.tag_to_width(best_tag)
                 left_margin = self.tag_to_left_margin(best_tag)
-                tag_to_align = self.tag_to_align(best_tag)
+                align = self.tag_to_align(best_tag)
+                if (best_tag == "character" or best_tag == "scene_heading"):
+                    if (pdf.y + 0.17 * 2 > pdf.page_break_trigger):
+                        pdf.multi_cell(width, 0.17, txt="", align=align)
             text=text_entry.get(start, this_line_no+".end")
             pdf.set_x(left_margin)
             pdf.multi_cell(width, 0.17, txt=text, align=align)
@@ -328,11 +257,6 @@ class Application(Frame):
         text_entry.tag_add("action", "1.0", END)
 
         self.containing_frame.writing_frame.pack(side="left")
-
-#        self.containing_frame.viewing_frame = ViewingFrame(self.containing_frame.writing_frame.scrollbar,
-#                                                           self.containing_frame)
-#        self.containing_frame.viewing_frame.pack(side="left")
-
 
         self.containing_frame.pack(side="top")
 
