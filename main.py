@@ -1,4 +1,5 @@
 import re
+import sys
 from tkinter import *
 from tkinter.ttk import *
 from mixin import ModifiedMixin
@@ -271,8 +272,11 @@ class Application(Frame):
 
 
 if __name__ == "__main__":
+    sys.stdout = open("output.log", "w")
+    sys.stderr = open("errors.log", "w")
+
     root = Tk()
     app = Application(master=root)
-    app.master.title("Libretto")
+    app.master.title("Scripter")
     app.master.minsize(400, 400)
     app.mainloop()
