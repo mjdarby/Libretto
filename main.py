@@ -1,10 +1,13 @@
 import re
 import sys
 from tkinter import *
+from tkinter import font
 from tkinter.ttk import *
 from mixin import ModifiedMixin
 
 import fpdf
+
+global thefont
 
 class ModifiedText(ModifiedMixin, Text):
     def __init__(self, *a, **b):
@@ -25,10 +28,10 @@ class WritingFrame(Frame):
         self.scrollbar = Scrollbar(self)
         self.scrollbar.pack(side=RIGHT, fill=Y)
 
-        self.text_entry = ModifiedText(self, font=("Courier New", 12), yscrollcommand=self.scrollbar.set, width=96, height=40, wrap=WORD)
+        self.text_entry = ModifiedText(self, font=(thefont, 12), yscrollcommand=self.scrollbar.set, width=96, height=40, wrap=WORD)
         self.scrollbar.config(command=self.text_entry.yview)
         self.text_entry.beenModified = self.callback
-        self.text_entry.pack(side="left", fill=BOTH, expand=1)
+        self.text_entry.pack(side="left")
 
 class ViewingFrame(Frame):
     def __init__(self,  scrollbar, master=None):
@@ -38,7 +41,7 @@ class ViewingFrame(Frame):
         self.buildWidgets()
 
     def buildWidgets(self):
-        self.text_entry = Text(self, font=("Courier New", 12), width=60, height=40, wrap=WORD)
+        self.text_entry = Text(self, font=(thefont, 12), width=60, height=40, wrap=WORD)
         self.text_entry.pack(side="left", fill=BOTH, expand=1)
 
 class Application(Frame):
@@ -153,12 +156,12 @@ class Application(Frame):
         self.my_tag_lower(text_entry, "action")
 
     def configure_tags(self, text_entry):
-        text_entry.tag_configure("scene_heading", font=("Courier New", 12, "bold"), lmargin1="1.5i", lmargin2="1.5i", rmargin="1i")
-        text_entry.tag_configure("character", font=("Courier New", 12, "bold"), lmargin1="4.2i", lmargin2="4.2i", rmargin="1i")
-        text_entry.tag_configure("parenthetical", font=("Courier New", 12), lmargin1="3.6i", lmargin2="3.6i", rmargin="2.9i")
-        text_entry.tag_configure("dialogue", font=("Courier New", 12), lmargin1="2.9i", lmargin2="2.9i", rmargin="2.3i")
-        text_entry.tag_configure("transition", font=("Courier New", 12, "bold"), lmargin1="6i", lmargin2="6i", rmargin="1i")
-        text_entry.tag_configure("action", font=("Courier New", 12), lmargin1="1.5i", lmargin2="1.5i", rmargin="1i")
+        text_entry.tag_configure("scene_heading", font=(thefont, 12, "bold"), lmargin1="1.5i", lmargin2="1.5i", rmargin="1i")
+        text_entry.tag_configure("character", font=(thefont, 12, "bold"), lmargin1="4.2i", lmargin2="4.2i", rmargin="1i")
+        text_entry.tag_configure("parenthetical", font=(thefont, 12), lmargin1="3.6i", lmargin2="3.6i", rmargin="2.9i")
+        text_entry.tag_configure("dialogue", font=(thefont, 12), lmargin1="2.9i", lmargin2="2.9i", rmargin="2.3i")
+        text_entry.tag_configure("transition", font=(thefont, 12, "bold"), lmargin1="6i", lmargin2="6i", rmargin="1i")
+        text_entry.tag_configure("action", font=(thefont, 12), lmargin1="1.5i", lmargin2="1.5i", rmargin="1i")
 
     def process_text(self, event):
         text_entry = self.containing_frame.writing_frame.text_entry
@@ -246,7 +249,18 @@ class Application(Frame):
                 break
 
         pdf.output("output.pdf")
-        print("Done printing")
+
+        # Pop up
+        top = Toplevel()
+        top.minsize(width=100, height=50)
+        top.transient(self)
+        top.title("Info")
+
+        msg = Message(top, text="Script saved")
+        msg.pack()
+
+        button = Button(top, text="Dismiss", command=top.destroy)
+        button.pack()
 
     def buildWidgets(self):
         self.containing_frame = Frame(self)
@@ -276,6 +290,7 @@ if __name__ == "__main__":
     sys.stderr = open("errors.log", "w")
 
     root = Tk()
+    thefont = "Courier Prime" if "Courier Prime" in font.families() and sys.platform.startswith("win32") else "Courier New"
     app = Application(master=root)
     app.master.title("Scripter")
     app.master.minsize(400, 400)
