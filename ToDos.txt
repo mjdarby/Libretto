@@ -1,4 +1,7 @@
 Simultaneous dialogue
-Fancy formatting
+Fancier formatting
 > BOB and > LOBLAW <
 Title page stuff
+
+Bugs and annoyances:
+Have to do a full tag + text recompute on line change because modifying the cache is a super pain.
