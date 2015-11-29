@@ -557,6 +557,179 @@ class Application(Frame):
 
 
     def pdf(self):
+        if 0:
+            self.pdf_fpdf()
+        else:
+            self.pdf_reportlab()
+
+    def pdf_reportlab(self):
+        from reportlab.lib.enums import TA_JUSTIFY
+        from reportlab.lib.pagesizes import letter
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.platypus.doctemplate import Indenter
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+
+        def remove_leading_special_characters(text):
+            new_text = text
+            if text and text[0] in [".", "!", "@", "~", ">"]:
+                new_text = text[1:]
+            return new_text
+
+        def remove_trailing_special_characters(text):
+            new_text = text
+            if text and text[-1] in ["<"]:
+                new_text = text[:-1]
+            return new_text
+
+        pdfmetrics.registerFont(TTFont('Courier Prime', 'CourierPrime.ttf'))
+        pdfmetrics.registerFont(TTFont('Courier Prime Bold', 'CourierPrimeBold.ttf'))
+        pdfmetrics.registerFont(TTFont('Courier Prime Italic', 'CourierPrimeItalic.ttf'))
+        pdfmetrics.registerFont(TTFont('Courier Prime Bold Italic', 'CourierPrimeBoldItalic.ttf'))
+
+        text_entry = self.containing_frame.writing_frame.text_entry
+
+        doc = SimpleDocTemplate("script.pdf",pagesize=letter,
+                                rightMargin=0,leftMargin=0,
+                                topMargin=inch,bottomMargin=inch)
+
+
+        styles=getSampleStyleSheet()
+        styles.add(ParagraphStyle(name='Standard',
+                                  fontName='Courier Prime',
+                                  fontSize=12,
+                                  leading=12))
+
+        styles.add(ParagraphStyle(name='scene_heading',
+                                  fontName='Courier Prime Bold',
+                                  fontSize=12,
+                                  leading=12))
+
+        styles.add(ParagraphStyle(name='character',
+                                  fontName='Courier Prime Bold',
+                                  fontSize=12,
+                                  leading=12))
+
+        styles.add(ParagraphStyle(name='parenthetical',
+                                  fontName='Courier Prime',
+                                  fontSize=12,
+                                  leading=12))
+
+        styles.add(ParagraphStyle(name='dialogue',
+                                  fontName='Courier Prime',
+                                  fontSize=12,
+                                  leading=12))
+
+        styles.add(ParagraphStyle(name='transition',
+                                  fontName='Courier Prime Bold',
+                                  fontSize=12,
+                                  leading=12))
+
+        def tag_to_left_margin(tag):
+            if tag == "scene_heading":
+                return 1.5
+            if tag == "character":
+                return 3.5
+            if tag == "parenthetical":
+                return 3.0
+            if tag == "dialogue":
+                return 2.5
+            if tag == "transition":
+                return 5.5
+            if tag == "action":
+                return 1.5
+            return 1.5
+
+        def tag_to_right_margin(tag):
+            if tag == "scene_heading":
+                return 1
+            if tag == "character":
+                return 1.25
+            if tag == "parenthetical":
+                return 3.0
+            if tag == "dialogue":
+                return 2.5
+            if tag == "transition":
+                return 1.5
+            if tag == "action":
+                return 1
+            return 1
+
+        def get_stylesheet(style):
+            if style == "scene_heading":
+                return "scene_heading"
+            if style == "character":
+                return "character"
+            if style == "parenthetical":
+                return "parenthetical"
+            if style == "dialogue":
+                return "dialogue"
+            if style == "transition":
+                return "transition"
+            else:
+                return "Standard"
+
+        structure = []
+
+        start = "1.0"
+        while 1:
+            this_line_no = str(int(start[0:start.index(".")]))
+            tags = text_entry.tag_names(start)
+            best_tag = tags[-1] if tags else ""
+            width = 6
+            left_margin = 1.5
+            right_margin = 1
+            align='L'
+            if (best_tag):
+                width = self.tag_to_width(best_tag)
+                left_margin = tag_to_left_margin(best_tag)
+                right_margin = tag_to_right_margin(best_tag)
+                align = self.tag_to_align(best_tag)
+
+                # TODO: Fix paginiation for boundary elements, the below
+                # is busted
+                #if (best_tag == "character" or best_tag == "scene_heading"):
+                #    if (pdf.y + 0.17 * 2 > pdf.page_break_trigger):
+                #        pdf.multi_cell(width, 0.17*2, txt="", align=align)
+
+            text=text_entry.get(start, this_line_no+".end")
+            text=remove_leading_special_characters(text)
+            text=remove_trailing_special_characters(text)
+            if text != "":
+                structure.append(Indenter(left_margin*inch, right_margin*inch))
+                structure.append(Paragraph(text, styles[get_stylesheet(best_tag)]))
+                structure.append(Indenter(-left_margin*inch, -right_margin*inch))
+            else:
+                structure.append(Spacer(1, 12))
+            start = text_entry.index(start + " lineend +1c")
+            next_line_no = int(start[0:start.index(".")])
+            last_line_no = text_entry.index(END)
+            last_line_no = int(last_line_no[0:last_line_no.index(".")])
+            if next_line_no >= last_line_no:
+                break
+
+        def my_page(canv,doc):
+            frame = doc.pageTemplates[0].frames[0]
+            frame.leftPadding=frame.rightPadding=frame.topPadding=frame.bottomPadding=0
+            canv.saveState()
+
+        doc.build(structure, onFirstPage=my_page, onLaterPages=my_page)
+
+        # Pop up
+        top = Toplevel()
+        top.minsize(width=100, height=50)
+        top.transient(self)
+        top.title("Info")
+
+        msg = Message(top, text="Script saved")
+        msg.pack()
+
+        button = Button(top, text="Dismiss", command=top.destroy)
+        button.pack()
+
+    def pdf_fpdf(self):
         def remove_leading_special_characters(text):
             new_text = text
             if text and text[0] in [".", "!", "@", "~", ">"]:
@@ -574,7 +747,6 @@ class Application(Frame):
         pdf = fpdf.FPDF('P', 'in', format='letter')
         pdf.add_font("CourierPrime", fname='CourierPrime.ttf', uni=True)
         pdf.set_margins(0, 1, 1)
-
 
         pdf.add_page()
         pdf.set_font("CourierPrime", size=12)
