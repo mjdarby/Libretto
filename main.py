@@ -54,6 +54,15 @@ class Application(Frame):
         self.tag_data = {}
 
     def wipe_tags(self, text_entry):
+        text_entry.tag_delete("centered_text")
+        text_entry.tag_delete("underline")
+        text_entry.tag_delete("italics")
+        text_entry.tag_delete("bold")
+        text_entry.tag_delete("bold_italics")
+        text_entry.tag_delete("bold_underline")
+        text_entry.tag_delete("italics_underline")
+        text_entry.tag_delete("bold_italics_underline")
+
         text_entry.tag_delete("scene_heading")
         text_entry.tag_delete("transition")
         text_entry.tag_delete("character")
@@ -64,6 +73,15 @@ class Application(Frame):
     def wipe_tags_line(self, text_entry, line):
         start = str(line) + ".0"
         end = str(line) + ".end"
+        text_entry.tag_remove("centered_text", start, end)
+        text_entry.tag_remove("underline", start, end)
+        text_entry.tag_remove("italics", start, end)
+        text_entry.tag_remove("bold", start, end)
+        text_entry.tag_remove("bold_italics", start, end)
+        text_entry.tag_remove("bold_underline", start, end)
+        text_entry.tag_remove("italics_underline", start, end)
+        text_entry.tag_remove("bold_italics_underline", start, end)
+
         text_entry.tag_remove("scene_heading", start, end)
         text_entry.tag_remove("transition", start, end)
         text_entry.tag_remove("character", start, end)
@@ -78,9 +96,15 @@ class Application(Frame):
             if not pos:
                 break
             line_no = pos[0:pos.index(".")]
+            prev_line_start_idx = str(int(line_no) - 1) + ".0"
+            prev_line_end_idx = str(int(line_no) - 1) + ".end"
+            next_line_start_idx = str(int(line_no) + 1) + ".0"
+            next_line_end_idx = str(int(line_no) + 1) + ".end"
             my_start = line_no+".0"
             my_end = line_no+".end"
-            if not text_entry.tag_names(index=my_start):
+            if (not text_entry.tag_names(index=my_start) and
+                text_entry.get(prev_line_start_idx, prev_line_end_idx) == "" and
+                text_entry.get(next_line_start_idx, next_line_end_idx) == ""):
                 text_entry.tag_add("transition", my_start, my_end)
             start = pos + "+1c"
 
@@ -95,6 +119,101 @@ class Application(Frame):
             my_end = line_no+".end"
             if not text_entry.tag_names(index=my_start):
                 text_entry.tag_add("scene_heading", my_start, my_end)
+            start = pos + "+1c"
+
+    def format_centered_text(self, text_entry):
+        start = "1.0"
+        while 1:
+            pos = text_entry.search(r'^>.+<$', start, regexp=True, stopindex=END)
+            if not pos:
+                break
+            line_no = pos[0:pos.index(".")]
+            my_start = line_no+".0"
+            my_end = line_no+".end"
+            if not text_entry.tag_names(index=my_start):
+                text_entry.tag_add("centered_text", my_start, my_end)
+            start = pos + "+1c"
+
+    def format_emphasis(self, text_entry):
+        def already_styled(pos):
+            tags = text_entry.tag_names(pos+"+1c")
+            styles = ["bold_italics_underline",
+                      "bold_itatlics",
+                      "bold",
+                      "italics",
+                      "underline",
+                      "bold_underline",
+                      "italics_underline"]
+            return any([x in tags for x in styles])
+
+        start = "1.0"
+        while 1:
+            pos = text_entry.search(r'(_\*{3}|\*{3}_)[^<>]+(_\*{3}|\*{3}_)', start, regexp=True, stopindex=END)
+            if pos:
+                end_pos = text_entry.search(r'(_\*{3}|\*{3}_)', pos + "+1c", regexp=True, stopindex=END)
+                text_entry.tag_add("bold_italics_underline", pos, end_pos + "+4c")
+            if not pos:
+                break
+            start = pos + "+1c"
+
+        start = "1.0"
+        while 1:
+            pos = text_entry.search(r'\*\*\*[^<>]+\*\*\*', start, regexp=True, stopindex=END)
+            if pos and not already_styled(pos):
+                end_pos = text_entry.search(r'\*\*\*', pos + "+1c", regexp=True, stopindex=END)
+                text_entry.tag_add("bold_italics", pos, end_pos + "+3c")
+            if not pos:
+                break
+            start = pos + "+1c"
+
+        start = "1.0"
+        while 1:
+            pos = text_entry.search(r'(_\*{2}|\*{2}_)[^<>]+(_\*{2}|\*{2}_)', start, regexp=True, stopindex=END)
+            if pos and not already_styled(pos):
+                end_pos = text_entry.search(r'(_\*{2}|\*{2}_)', pos + "+1c", regexp=True, stopindex=END)
+                text_entry.tag_add("bold_underline", pos, end_pos + "+3c")
+            if not pos:
+                break
+            start = pos + "+1c"
+
+        start = "1.0"
+        while 1:
+            pos = text_entry.search(r'(_\*{1}|\*{1}_)[^<>]+(_\*{1}|\*{1}_)', start, regexp=True, stopindex=END)
+            if pos and not already_styled(pos):
+                end_pos = text_entry.search(r'(_\*{1}|\*{1}_)', pos + "+1c", regexp=True, stopindex=END)
+                text_entry.tag_add("italic_underline", pos, end_pos + "+2c")
+            if not pos:
+                break
+            start = pos + "+1c"
+
+        start = "1.0"
+        while 1:
+            pos = text_entry.search(r'\*\*[^\*]+\*\*', start, regexp=True, stopindex=END)
+            if pos and not already_styled(pos):
+                end_pos = text_entry.search(r'\*\*', pos + "+1c", regexp=True, stopindex=END)
+                text_entry.tag_add("bold", pos, end_pos + "+2c")
+            if not pos:
+                break
+            start = pos + "+1c"
+
+        start = "1.0"
+        while 1:
+            pos = text_entry.search(r'\*[^\*]+\*', start, regexp=True, stopindex=END)
+            if pos and not already_styled(pos):
+                end_pos = text_entry.search(r'\*', pos + "+1c", regexp=True, stopindex=END)
+                text_entry.tag_add("italics", pos, end_pos + "+1c")
+            if not pos:
+                break
+            start = pos + "+1c"
+
+        start = "1.0"
+        while 1:
+            pos = text_entry.search(r'_[^_]+_', start, regexp=True, stopindex=END)
+            if pos and not already_styled(pos):
+                end_pos = text_entry.search(r'_', pos + "+1c", regexp=True, stopindex=END)
+                text_entry.tag_add("underline", pos, end_pos + "+1c")
+            if not pos:
+                break
             start = pos + "+1c"
 
     def format_characters(self, text_entry):
@@ -166,11 +285,20 @@ class Application(Frame):
             pass
 
     def order_tags(self, text_entry):
+        self.my_tag_lower(text_entry, "bold_italic_underline")
+        self.my_tag_lower(text_entry, "bold_italic")
+        self.my_tag_lower(text_entry, "bold_underline")
+        self.my_tag_lower(text_entry, "italic_underline")
+        self.my_tag_lower(text_entry, "bold")
+        self.my_tag_lower(text_entry, "italic")
+        self.my_tag_lower(text_entry, "underline")
         # Scene first, then character, then dialogue, then parentheses
         self.my_tag_lower(text_entry, "scene_heading")
         self.my_tag_lower(text_entry, "character")
         self.my_tag_lower(text_entry, "dialogue")
+        self.my_tag_lower(text_entry, "centered_text")
         self.my_tag_lower(text_entry, "action")
+
 
     def configure_tags(self, text_entry):
         text_entry.tag_configure("scene_heading", font=(thefont, 12, "bold"), lmargin1="1.5i", lmargin2="1.5i", rmargin="1i")
@@ -179,6 +307,14 @@ class Application(Frame):
         text_entry.tag_configure("dialogue", font=(thefont, 12), lmargin1="2.9i", lmargin2="2.9i", rmargin="2.3i")
         text_entry.tag_configure("transition", font=(thefont, 12, "bold"), lmargin1="6i", lmargin2="6i", rmargin="1i")
         text_entry.tag_configure("action", font=(thefont, 12), lmargin1="1.5i", lmargin2="1.5i", rmargin="1i")
+
+        # Modifiers
+        text_entry.tag_configure("centered_text", justify="center")
+        text_entry.tag_configure("italics", font=(thefont, 12, "italic"))
+        text_entry.tag_configure("bold", font=(thefont, 12, "bold"))
+        text_entry.tag_configure("bold_italics", font=(thefont, 12, "bold italic" ))
+        text_entry.tag_configure("underline", font=(thefont, 12, "underline" ))
+        text_entry.tag_configure("bold_italics_underline", font=(thefont, 12, "bold italic underline" ))
 
     def format_line(self, text_entry, line, already_called_previous=False, already_called_next=False):
         line_no = int(line[0:line.index(".")])
@@ -193,17 +329,14 @@ class Application(Frame):
         self.format_characters_line(text_entry, line)
         self.format_dialogue_and_parentheticals_line(text_entry, line)
 
+        self.format_emphasis_line(text_entry, line)
+        self.format_centered_text_line(text_entry, line)
         text_entry.tag_add("action", start, end)
 
         self.order_tags(text_entry)
 
         self.tag_data[line_no] = [x for x in text_entry.tag_names(start)] if text_entry.get(start, end) != "" else []
         self.text_data[line_no] = text_entry.get(start, end)
-        print(str(line_no))
-        print(self.text_data[line_no])
-        print(current_text)
-        print(self.tag_data[line_no])
-        print(current_tags)
 
         last_line_no = text_entry.index(END)
         last_line_no = int(last_line_no[0:last_line_no.index(".")])
@@ -216,15 +349,20 @@ class Application(Frame):
             if (line_no + 1 < last_line_no):
                 self.format_line(text_entry, str(line_no+1) + ".0", already_called_next=True)
 
-
     def format_transitions_line(self, text_entry, line):
         line_no = int(line[0:line.index(".")])
+        prev_line_start_idx = str(line_no - 1) + ".0"
+        prev_line_end_idx = str(line_no - 1) + ".end"
+        next_line_start_idx = str(line_no + 1) + ".0"
+        next_line_end_idx = str(line_no + 1) + ".end"
         start = str(line_no) +".0"
         end =  str(line_no) + ".end"
         pos = text_entry.search(r'^[A-Z ]+:$', start, regexp=True, stopindex=end)
         if not pos:
             return
-        if not text_entry.tag_names(index=start):
+        if (not text_entry.tag_names(index=start) and
+            text_entry.get(prev_line_start_idx, prev_line_end_idx) == "" and
+            text_entry.get(next_line_start_idx, next_line_end_idx) == ""):
             text_entry.tag_add("transition", start, end)
 
     def format_scene_headings_line(self, text_entry, line):
@@ -236,6 +374,16 @@ class Application(Frame):
             return
         if not text_entry.tag_names(index=start):
             text_entry.tag_add("scene_heading", start, end)
+
+    def format_centered_text_line(self, text_entry, line):
+        line_no = int(line[0:line.index(".")])
+        start = str(line_no) +".0"
+        end =  str(line_no) + ".end"
+        pos = text_entry.search(r'^>.+<$', start, regexp=True, stopindex=end)
+        if not pos:
+            return
+        if not text_entry.tag_names(index=start):
+            text_entry.tag_add("centered_text", start, end)
 
     def character_candidate(self, text_entry, line):
         line_no = int(line[0:line.index(".")])
@@ -269,8 +417,6 @@ class Application(Frame):
         previous_line_start = previous_line_no + ".0"
         previous_line_end = previous_line_no + ".end"
         previous_line_tags = text_entry.tag_names(previous_line_no+".0") if text_entry.get(previous_line_start, previous_line_end) != "" else []
-        print(str(previous_line_no))
-        print(previous_line_tags)
         candidate = ("character" in previous_line_tags or
                      "parenthetical" in previous_line_tags or
                      "dialogue" in previous_line_tags)
@@ -280,6 +426,61 @@ class Application(Frame):
                 text_entry.tag_add("parenthetical", start, end)
             else:
                 text_entry.tag_add("dialogue", start, end)
+
+    def format_emphasis_line(self, text_entry, line):
+        def already_styled(pos):
+            tags = text_entry.tag_names(pos+"+1c")
+            styles = ["bold_italics_underline",
+                      "bold_itatlics",
+                      "bold",
+                      "italics",
+                      "underline",
+                      "bold_underline",
+                      "italics_underline"]
+            return any([x in tags for x in styles])
+
+        line_no = int(line[0:line.index(".")])
+        start = str(line_no) +".0"
+        end =  str(line_no) + ".end"
+
+        pos = text_entry.search(r'(_\*{3}|\*{3}_)[^<>]+(_\*{3}|\*{3}_)', start, regexp=True, stopindex=end)
+        if pos:
+            end_pos = text_entry.search(r'(_\*{3}|\*{3}_)', pos + "+1c", regexp=True, stopindex=end) # Must work
+            text_entry.tag_add("bold_italics_underline", pos, end_pos + "+4c")
+
+        # Bold italics
+        pos = text_entry.search(r'\*\*\*[^<>]+\*\*\*', start, regexp=True, stopindex=end)
+        if pos and not already_styled(pos):
+            end_pos = text_entry.search(r'\*\*\*', pos + "+1c", regexp=True, stopindex=end) # Must work
+            text_entry.tag_add("bold_italics", pos, end_pos + "+3c")
+
+        pos = text_entry.search(r'(_\*{2}|\*{2}_)[^<>]+(_\*{2}|\*{2}_)', start, regexp=True, stopindex=end)
+        if pos and not already_styled(pos):
+            end_pos = text_entry.search(r'(_\*{2}|\*{2}_)', pos + "+1c", regexp=True, stopindex=end) # Must work
+            text_entry.tag_add("bold_underline", pos, end_pos + "+3c")
+
+        pos = text_entry.search(r'(_\*{1}|\*{1}_)[^<>]+(_\*{1}|\*{1}_)', start, regexp=True, stopindex=end)
+        if pos and not already_styled(pos):
+            end_pos = text_entry.search(r'(_\*{1}|\*{1}_)', pos + "+1c", regexp=True, stopindex=end) # Must work
+            text_entry.tag_add("italic_underline", pos, end_pos + "+2c")
+
+        # Bold
+        pos = text_entry.search(r'\*\*[^\*]+\*\*', start, regexp=True, stopindex=end)
+        if pos and not already_styled(pos):
+            end_pos = text_entry.search(r'\*\*', pos + "+1c", regexp=True, stopindex=end) # Must work
+            text_entry.tag_add("bold", pos, end_pos + "+2c")
+
+        # Italics
+        pos = text_entry.search(r'\*[^\*]+\*', start, regexp=True, stopindex=end)
+        if pos and not already_styled(pos):
+            end_pos = text_entry.search(r'\*', pos + "+1c", regexp=True, stopindex=end) # Must work
+            text_entry.tag_add("italics", pos, end_pos + "+1c")
+
+        pos = text_entry.search(r'_[^_]+_', start, regexp=True, stopindex=end)
+        if pos and not already_styled(pos):
+            end_pos = text_entry.search(r'_', pos + "+1c", regexp=True, stopindex=end) # Must work
+            text_entry.tag_add("underline", pos, end_pos + "+1c")
+
 
     def process_text_new(self, event):
         text_entry = self.containing_frame.writing_frame.text_entry
@@ -309,6 +510,9 @@ class Application(Frame):
         self.format_scene_headings(text_entry)
         self.format_characters(text_entry)
         self.format_dialogue_and_parentheticals(text_entry)
+
+        self.format_centered_text(text_entry)
+        self.format_emphasis(text_entry)
         self.format_the_rest(text_entry)
 
         self.order_tags(text_entry)
@@ -347,6 +551,8 @@ class Application(Frame):
     def tag_to_align(self, tag):
         if tag == "transition":
             return 'R'
+        elif tag == "centered_text":
+            return 'C'
         return 'L'
 
 
@@ -355,6 +561,12 @@ class Application(Frame):
             new_text = text
             if text and text[0] in [".", "!", "@", "~", ">"]:
                 new_text = text[1:]
+            return new_text
+
+        def remove_trailing_special_characters(text):
+            new_text = text
+            if text and text[-1] in ["<"]:
+                new_text = text[:-1]
             return new_text
 
         text_entry = self.containing_frame.writing_frame.text_entry
@@ -379,11 +591,16 @@ class Application(Frame):
                 width = self.tag_to_width(best_tag)
                 left_margin = self.tag_to_left_margin(best_tag)
                 align = self.tag_to_align(best_tag)
+
+                # TODO: Fix paginiation for boundary elements, the below
+                # is busted
                 if (best_tag == "character" or best_tag == "scene_heading"):
                     if (pdf.y + 0.17 * 2 > pdf.page_break_trigger):
                         pdf.multi_cell(width, 0.17*2, txt="", align=align)
+
             text=text_entry.get(start, this_line_no+".end")
             text=remove_leading_special_characters(text)
+            text=remove_trailing_special_characters(text)
             pdf.set_x(left_margin)
             pdf.multi_cell(width, 0.17, txt=text, align=align)
             start = text_entry.index(start + " lineend +1c")
@@ -432,8 +649,8 @@ class Application(Frame):
 
 import cProfile as profile
 if __name__ == "__main__":
-    sys.stdout = open("output.log", "w")
-    sys.stderr = open("errors.log", "w")
+#    sys.stdout = open("output.log", "w")
+#    sys.stderr = open("errors.log", "w")
 
     root = Tk()
     thefont = "Courier Prime" if "Courier Prime" in font.families() and sys.platform.startswith("win32") else "Courier New"
