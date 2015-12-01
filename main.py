@@ -591,10 +591,9 @@ class Application(Frame):
 
         text_entry = self.containing_frame.writing_frame.text_entry
 
-        doc = SimpleDocTemplate("script.pdf",pagesize=letter,
-                                rightMargin=0,leftMargin=0,
+        doc = SimpleDocTemplate("script2.pdf",pagesize=letter,
+                                rightMargin=1*inch,leftMargin=1.5*inch,
                                 topMargin=inch,bottomMargin=inch)
-
 
         styles=getSampleStyleSheet()
         styles.add(ParagraphStyle(name='Standard',
@@ -603,12 +602,12 @@ class Application(Frame):
                                   leading=12))
 
         styles.add(ParagraphStyle(name='scene_heading',
-                                  fontName='Courier Prime Bold',
+                                  fontName='Courier Prime',
                                   fontSize=12,
                                   leading=12))
 
         styles.add(ParagraphStyle(name='character',
-                                  fontName='Courier Prime Bold',
+                                  fontName='Courier Prime',
                                   fontSize=12,
                                   leading=12))
 
@@ -623,39 +622,39 @@ class Application(Frame):
                                   leading=12))
 
         styles.add(ParagraphStyle(name='transition',
-                                  fontName='Courier Prime Bold',
+                                  fontName='Courier Prime',
                                   fontSize=12,
                                   leading=12))
 
         def tag_to_left_margin(tag):
             if tag == "scene_heading":
-                return 1.5
+                return 0
             if tag == "character":
-                return 3.5
+                return 2
             if tag == "parenthetical":
-                return 3.0
-            if tag == "dialogue":
-                return 2.5
-            if tag == "transition":
-                return 5.5
-            if tag == "action":
                 return 1.5
-            return 1.5
+            if tag == "dialogue":
+                return 1
+            if tag == "transition":
+                return 4
+            if tag == "action":
+                return 0
+            return 0
 
         def tag_to_right_margin(tag):
             if tag == "scene_heading":
-                return 1
+                return 0
             if tag == "character":
-                return 1.25
+                return 0.25
             if tag == "parenthetical":
-                return 3.0
+                return 2.0
             if tag == "dialogue":
-                return 2.5
-            if tag == "transition":
-                return 1.5
-            if tag == "action":
                 return 1
-            return 1
+            if tag == "transition":
+                return 0.5
+            if tag == "action":
+                return 0
+            return 0
 
         def get_stylesheet(style):
             if style == "scene_heading":
