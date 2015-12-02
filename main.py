@@ -60,8 +60,8 @@ class Application(Frame):
         text_entry.tag_delete("bold")
         text_entry.tag_delete("bold_italics")
         text_entry.tag_delete("bold_underline")
-        text_entry.tag_delete("italics_underline")
-        text_entry.tag_delete("bold_italics_underline")
+        text_entry.tag_delete("italic_underline")
+        text_entry.tag_delete("bold_italic_underline")
 
         text_entry.tag_delete("scene_heading")
         text_entry.tag_delete("transition")
@@ -79,8 +79,8 @@ class Application(Frame):
         text_entry.tag_remove("bold", start, end)
         text_entry.tag_remove("bold_italics", start, end)
         text_entry.tag_remove("bold_underline", start, end)
-        text_entry.tag_remove("italics_underline", start, end)
-        text_entry.tag_remove("bold_italics_underline", start, end)
+        text_entry.tag_remove("italic_underline", start, end)
+        text_entry.tag_remove("bold_italic_underline", start, end)
 
         text_entry.tag_remove("scene_heading", start, end)
         text_entry.tag_remove("transition", start, end)
@@ -137,13 +137,13 @@ class Application(Frame):
     def format_emphasis(self, text_entry):
         def already_styled(pos):
             tags = text_entry.tag_names(pos+"+1c")
-            styles = ["bold_italics_underline",
-                      "bold_itatlics",
+            styles = ["bold_italic_underline",
+                      "bold_italics",
                       "bold",
                       "italics",
                       "underline",
                       "bold_underline",
-                      "italics_underline"]
+                      "italic_underline"]
             return any([x in tags for x in styles])
 
         start = "1.0"
@@ -151,7 +151,7 @@ class Application(Frame):
             pos = text_entry.search(r'(_\*{3}|\*{3}_)[^<>]+(_\*{3}|\*{3}_)', start, regexp=True, stopindex=END)
             if pos:
                 end_pos = text_entry.search(r'(_\*{3}|\*{3}_)', pos + "+1c", regexp=True, stopindex=END)
-                text_entry.tag_add("bold_italics_underline", pos, end_pos + "+4c")
+                text_entry.tag_add("bold_italic_underline", pos, end_pos + "+4c")
             if not pos:
                 break
             start = pos + "+1c"
@@ -159,62 +159,68 @@ class Application(Frame):
         start = "1.0"
         while 1:
             pos = text_entry.search(r'\*\*\*[^<>]+\*\*\*', start, regexp=True, stopindex=END)
+            end_pos = pos
             if pos and not already_styled(pos):
                 end_pos = text_entry.search(r'\*\*\*', pos + "+1c", regexp=True, stopindex=END)
                 text_entry.tag_add("bold_italics", pos, end_pos + "+3c")
             if not pos:
                 break
-            start = pos + "+1c"
+            start = end_pos + "+1c"
 
         start = "1.0"
         while 1:
             pos = text_entry.search(r'(_\*{2}|\*{2}_)[^<>]+(_\*{2}|\*{2}_)', start, regexp=True, stopindex=END)
+            end_pos = pos
             if pos and not already_styled(pos):
                 end_pos = text_entry.search(r'(_\*{2}|\*{2}_)', pos + "+1c", regexp=True, stopindex=END)
                 text_entry.tag_add("bold_underline", pos, end_pos + "+3c")
             if not pos:
                 break
-            start = pos + "+1c"
+            start = end_pos + "+1c"
 
         start = "1.0"
         while 1:
             pos = text_entry.search(r'(_\*{1}|\*{1}_)[^<>]+(_\*{1}|\*{1}_)', start, regexp=True, stopindex=END)
+            end_pos = pos
             if pos and not already_styled(pos):
                 end_pos = text_entry.search(r'(_\*{1}|\*{1}_)', pos + "+1c", regexp=True, stopindex=END)
                 text_entry.tag_add("italic_underline", pos, end_pos + "+2c")
             if not pos:
                 break
-            start = pos + "+1c"
+            start = end_pos + "+1c"
 
         start = "1.0"
         while 1:
             pos = text_entry.search(r'\*\*[^\*]+\*\*', start, regexp=True, stopindex=END)
+            end_pos = pos
             if pos and not already_styled(pos):
                 end_pos = text_entry.search(r'\*\*', pos + "+1c", regexp=True, stopindex=END)
                 text_entry.tag_add("bold", pos, end_pos + "+2c")
             if not pos:
                 break
-            start = pos + "+1c"
+            start = end_pos + "+1c"
 
         start = "1.0"
         while 1:
             pos = text_entry.search(r'\*[^\*]+\*', start, regexp=True, stopindex=END)
+            end_pos = pos
             if pos and not already_styled(pos):
                 end_pos = text_entry.search(r'\*', pos + "+1c", regexp=True, stopindex=END)
                 text_entry.tag_add("italics", pos, end_pos + "+1c")
             if not pos:
                 break
-            start = pos + "+1c"
+            start = end_pos + "+1c"
 
         start = "1.0"
         while 1:
             pos = text_entry.search(r'_[^_]+_', start, regexp=True, stopindex=END)
+            end_pos = pos
             if pos and not already_styled(pos):
                 end_pos = text_entry.search(r'_', pos + "+1c", regexp=True, stopindex=END)
                 text_entry.tag_add("underline", pos, end_pos + "+1c")
             if not pos:
                 break
-            start = pos + "+1c"
+            start = end_pos + "+1c"
 
     def format_characters(self, text_entry):
         start = "1.0"
@@ -313,8 +319,10 @@ class Application(Frame):
         text_entry.tag_configure("italics", font=(thefont, 12, "italic"))
         text_entry.tag_configure("bold", font=(thefont, 12, "bold"))
         text_entry.tag_configure("bold_italics", font=(thefont, 12, "bold italic" ))
+        text_entry.tag_configure("italic_underline", font=(thefont, 12, "italic underline" ))
+        text_entry.tag_configure("bold_underline", font=(thefont, 12, "bold underline" ))
         text_entry.tag_configure("underline", font=(thefont, 12, "underline" ))
-        text_entry.tag_configure("bold_italics_underline", font=(thefont, 12, "bold italic underline" ))
+        text_entry.tag_configure("bold_italic_underline", font=(thefont, 12, "bold italic underline" ))
 
     def format_line(self, text_entry, line, already_called_previous=False, already_called_next=False):
         line_no = int(line[0:line.index(".")])
@@ -430,13 +438,13 @@ class Application(Frame):
     def format_emphasis_line(self, text_entry, line):
         def already_styled(pos):
             tags = text_entry.tag_names(pos+"+1c")
-            styles = ["bold_italics_underline",
-                      "bold_itatlics",
+            styles = ["bold_italic_underline",
+                      "bold_italics",
                       "bold",
                       "italics",
                       "underline",
                       "bold_underline",
-                      "italics_underline"]
+                      "italic_underline"]
             return any([x in tags for x in styles])
 
         line_no = int(line[0:line.index(".")])
@@ -444,42 +452,49 @@ class Application(Frame):
         end =  str(line_no) + ".end"
 
         pos = text_entry.search(r'(_\*{3}|\*{3}_)[^<>]+(_\*{3}|\*{3}_)', start, regexp=True, stopindex=end)
-        if pos:
+        while pos:
             end_pos = text_entry.search(r'(_\*{3}|\*{3}_)', pos + "+1c", regexp=True, stopindex=end) # Must work
-            text_entry.tag_add("bold_italics_underline", pos, end_pos + "+4c")
+            text_entry.tag_add("bold_italic_underline", pos, end_pos + "+4c")
+            pos = text_entry.search(r'(_\*{3}|\*{3}_)[^<>]+(_\*{3}|\*{3}_)', end_pos+"+1c", regexp=True, stopindex=end)
 
         # Bold italics
         pos = text_entry.search(r'\*\*\*[^<>]+\*\*\*', start, regexp=True, stopindex=end)
-        if pos and not already_styled(pos):
+        while pos and not already_styled(pos):
             end_pos = text_entry.search(r'\*\*\*', pos + "+1c", regexp=True, stopindex=end) # Must work
             text_entry.tag_add("bold_italics", pos, end_pos + "+3c")
+            pos = text_entry.search(r'\*\*\*[^<>]+\*\*\*', end_pos+"+1c", regexp=True, stopindex=end)
 
         pos = text_entry.search(r'(_\*{2}|\*{2}_)[^<>]+(_\*{2}|\*{2}_)', start, regexp=True, stopindex=end)
-        if pos and not already_styled(pos):
+        while pos and not already_styled(pos):
             end_pos = text_entry.search(r'(_\*{2}|\*{2}_)', pos + "+1c", regexp=True, stopindex=end) # Must work
             text_entry.tag_add("bold_underline", pos, end_pos + "+3c")
+            pos = text_entry.search(r'(_\*{2}|\*{2}_)[^<>]+(_\*{2}|\*{2}_)', end_pos+"+1c", regexp=True, stopindex=end)
 
         pos = text_entry.search(r'(_\*{1}|\*{1}_)[^<>]+(_\*{1}|\*{1}_)', start, regexp=True, stopindex=end)
-        if pos and not already_styled(pos):
+        while pos and not already_styled(pos):
             end_pos = text_entry.search(r'(_\*{1}|\*{1}_)', pos + "+1c", regexp=True, stopindex=end) # Must work
             text_entry.tag_add("italic_underline", pos, end_pos + "+2c")
+            pos = text_entry.search(r'(_\*{1}|\*{1}_)[^<>]+(_\*{1}|\*{1}_)', end_pos+"+1c", regexp=True, stopindex=end)
 
         # Bold
         pos = text_entry.search(r'\*\*[^\*]+\*\*', start, regexp=True, stopindex=end)
-        if pos and not already_styled(pos):
+        while pos and not already_styled(pos):
             end_pos = text_entry.search(r'\*\*', pos + "+1c", regexp=True, stopindex=end) # Must work
             text_entry.tag_add("bold", pos, end_pos + "+2c")
+            pos = text_entry.search(r'\*\*[^\*]+\*\*', end_pos+"+1c", regexp=True, stopindex=end)
 
         # Italics
         pos = text_entry.search(r'\*[^\*]+\*', start, regexp=True, stopindex=end)
-        if pos and not already_styled(pos):
+        while pos and not already_styled(pos):
             end_pos = text_entry.search(r'\*', pos + "+1c", regexp=True, stopindex=end) # Must work
             text_entry.tag_add("italics", pos, end_pos + "+1c")
+            pos = text_entry.search(r'\*[^\*]+\*', end_pos+"+1c", regexp=True, stopindex=end)
 
         pos = text_entry.search(r'_[^_]+_', start, regexp=True, stopindex=end)
-        if pos and not already_styled(pos):
+        while pos and not already_styled(pos):
             end_pos = text_entry.search(r'_', pos + "+1c", regexp=True, stopindex=end) # Must work
             text_entry.tag_add("underline", pos, end_pos + "+1c")
+            pos = text_entry.search(r'_[^_]+_', end_pos+"+1c", regexp=True, stopindex=end)
 
 
     def process_text_new(self, event):
@@ -565,6 +580,7 @@ class Application(Frame):
     def pdf_reportlab(self):
         from reportlab.lib.enums import TA_JUSTIFY
         from reportlab.lib.pagesizes import letter
+        from reportlab.lib.fonts import addMapping
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.units import inch
@@ -588,6 +604,12 @@ class Application(Frame):
         pdfmetrics.registerFont(TTFont('Courier Prime Bold', 'CourierPrimeBold.ttf'))
         pdfmetrics.registerFont(TTFont('Courier Prime Italic', 'CourierPrimeItalic.ttf'))
         pdfmetrics.registerFont(TTFont('Courier Prime Bold Italic', 'CourierPrimeBoldItalic.ttf'))
+
+
+        addMapping('Courier Prime', 0, 0, "Courier Prime") #normal
+        addMapping('Courier Prime', 0, 1, "Courier Prime Italic") #italic
+        addMapping('Courier Prime', 1, 0, "Courier Prime Bold") #bold
+        addMapping('Courier Prime', 1, 1, "Courier Prime Bold Italic") #italic and bold
 
         text_entry = self.containing_frame.writing_frame.text_entry
 
@@ -626,6 +648,50 @@ class Application(Frame):
                                   fontSize=12,
                                   leading=12))
 
+        def number_of_characters_to_cut(tag):
+            if tag == "bold_italic_underline":
+                return 4;
+            if tag == "bold_italics":
+                return 3;
+            if tag == "bold":
+                return 2;
+            if tag == "italics":
+                return 1;
+            if tag == "underline":
+                return 1;
+            if tag == "bold_underline":
+                return 3;
+            if tag == "italic_underline":
+                return 2;
+
+        def get_html(tag):
+            if tag == "bold_italic_underline":
+                return ["<b><i><u>", "</u></i></b>"];
+            if tag == "bold_italics":
+                return ["<b><i>", "</i></b>"];
+            if tag == "bold":
+                return ["<b>", "</b>"];
+            if tag == "italics":
+                return ["<i>", "</i>"];
+            if tag == "underline":
+                return ["<u>", "</u>"];
+            if tag == "bold_underline":
+                return ["<b><u>", "</u></b>"];
+            if tag == "italic_underline":
+                return ["<i><u>", "</u></i>"];
+
+        def add_formatting_tags(text, tags):
+            for tag in tags:
+                characters_to_cut = number_of_characters_to_cut(tag[0])
+                html_tags = get_html(tag[0])
+                start_tag = html_tags[0]
+                end_tag = html_tags[1]
+                start_idx = tag[1]
+                end_idx = tag[2]
+                text = text[:end_idx-characters_to_cut] + end_tag + text[end_idx:]
+                text = text[:start_idx] + start_tag + text[start_idx+characters_to_cut:]
+            return text
+
         def tag_to_left_margin(tag):
             if tag == "scene_heading":
                 return 0
@@ -655,6 +721,24 @@ class Application(Frame):
             if tag == "action":
                 return 0
             return 0
+
+        def get_ordered_formatting_tags(start, end):
+            styles = ["bold_italic_underline",
+                      "bold_italics",
+                      "bold",
+                      "italics",
+                      "underline",
+                      "bold_underline",
+                      "italic_underline"]
+            tags = []
+            for style in styles:
+                tag_range = text_entry.tag_nextrange(style, start, end)
+                while tag_range:
+                    tag_start = int(tag_range[0][tag_range[0].index(".")+1:])
+                    tag_end = int(tag_range[1][tag_range[1].index(".")+1:])
+                    tags.append((style, tag_start, tag_end))
+                    tag_range = text_entry.tag_nextrange(style, tag_range[1], end)
+            return list(reversed(sorted(tags, key = lambda x: x[1])))
 
         def get_stylesheet(style):
             if style == "scene_heading":
@@ -693,7 +777,10 @@ class Application(Frame):
                 #    if (pdf.y + 0.17 * 2 > pdf.page_break_trigger):
                 #        pdf.multi_cell(width, 0.17*2, txt="", align=align)
 
+            formatting_tags = get_ordered_formatting_tags(start, this_line_no+".end")
+
             text=text_entry.get(start, this_line_no+".end")
+            text=add_formatting_tags(text, formatting_tags)
             text=remove_leading_special_characters(text)
             text=remove_trailing_special_characters(text)
             if text != "":
