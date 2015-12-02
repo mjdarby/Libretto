@@ -578,7 +578,7 @@ class Application(Frame):
             self.pdf_reportlab()
 
     def pdf_reportlab(self):
-        from reportlab.lib.enums import TA_JUSTIFY
+        from reportlab.lib.enums import TA_CENTER
         from reportlab.lib.pagesizes import letter
         from reportlab.lib.fonts import addMapping
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
@@ -647,6 +647,12 @@ class Application(Frame):
                                   fontName='Courier Prime',
                                   fontSize=12,
                                   leading=12))
+
+        styles.add(ParagraphStyle(name='centered_text',
+                                  fontName='Courier Prime',
+                                  fontSize=12,
+                                  leading=12,
+                                  alignment=TA_CENTER))
 
         def number_of_characters_to_cut(tag):
             if tag == "bold_italic_underline":
@@ -751,6 +757,8 @@ class Application(Frame):
                 return "dialogue"
             if style == "transition":
                 return "transition"
+            if style == "centered_text":
+                return "centered_text"
             else:
                 return "Standard"
 
@@ -770,7 +778,6 @@ class Application(Frame):
                 left_margin = tag_to_left_margin(best_tag)
                 right_margin = tag_to_right_margin(best_tag)
                 align = self.tag_to_align(best_tag)
-
                 # TODO: Fix paginiation for boundary elements, the below
                 # is busted
                 #if (best_tag == "character" or best_tag == "scene_heading"):
