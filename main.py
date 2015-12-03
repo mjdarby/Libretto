@@ -28,7 +28,7 @@ class WritingFrame(Frame):
         self.scrollbar = Scrollbar(self)
         self.scrollbar.pack(side=RIGHT, fill=Y)
 
-        self.text_entry = ModifiedText(self, font=(thefont, 12), yscrollcommand=self.scrollbar.set, width=96, height=40, wrap=WORD)
+        self.text_entry = ModifiedText(self, font=(thefont, 12), yscrollcommand=self.scrollbar.set, width=85, height=40, wrap=WORD)
         self.scrollbar.config(command=self.text_entry.yview)
         self.text_entry.beenModified = self.callback
         self.text_entry.pack(side="left")
@@ -92,7 +92,7 @@ class Application(Frame):
     def format_transitions(self, text_entry):
         start = "1.0"
         while 1:
-            pos = text_entry.search(r'^[A-Z ]+:$', start, regexp=True, stopindex=END)
+            pos = text_entry.search(r'(^>.*[^<]$)|(^[A-Z ]+:$)', start, regexp=True, stopindex=END)
             if not pos:
                 break
             line_no = pos[0:pos.index(".")]
@@ -306,13 +306,62 @@ class Application(Frame):
         self.my_tag_lower(text_entry, "action")
 
 
+    def configure_tags_helper(self, event):
+        self.configure_tags(self.containing_frame.writing_frame.text_entry)
+
     def configure_tags(self, text_entry):
-        text_entry.tag_configure("scene_heading", font=(thefont, 12, "bold"), lmargin1="1.5i", lmargin2="1.5i", rmargin="1i")
-        text_entry.tag_configure("character", font=(thefont, 12, "bold"), lmargin1="4.2i", lmargin2="4.2i", rmargin="1i")
-        text_entry.tag_configure("parenthetical", font=(thefont, 12), lmargin1="3.6i", lmargin2="3.6i", rmargin="2.9i")
-        text_entry.tag_configure("dialogue", font=(thefont, 12), lmargin1="2.9i", lmargin2="2.9i", rmargin="2.3i")
-        text_entry.tag_configure("transition", font=(thefont, 12, "bold"), lmargin1="6i", lmargin2="6i", rmargin="1i")
-        text_entry.tag_configure("action", font=(thefont, 12), lmargin1="1.5i", lmargin2="1.5i", rmargin="1i")
+        width = int(text_entry.winfo_width())
+
+        def lmargin(tag, pixel_width):
+            inch_width = pixel_width / 8.5
+            val = 1.5 * inch_width
+            if tag == "scene_heading":
+                val = 1.5
+            if tag == "character":
+                val = 3.7
+            if tag == "parenthetical":
+                val = 3.1
+            if tag == "dialogue":
+                val = 2.5
+            if tag == "transition":
+                val = 6
+            if tag == "action":
+                val = 1.5
+            val *= inch_width
+            return str(val)
+
+        def rmargin(tag, pixel_width):
+            inch_width = pixel_width / 8.5
+            val = 1 * inch_width
+            if tag == "scene_heading":
+                val = 1
+            if tag == "character":
+                val = 1.25
+            if tag == "parenthetical":
+                val = 3.0
+            if tag == "dialogue":
+                val = 2
+            if tag == "transition":
+                val = 1.5
+            if tag == "action":
+                val = 1
+            val *= inch_width
+            return str(val)
+
+        def is_bold(tag):
+            return tag in ["scene_heading", "character", "transition"]
+
+        for tag in ["scene_heading", "character", "parenthetical", "dialogue", "transition", "action"]:
+            if is_bold(tag):
+                text_entry.tag_configure(tag, font=(thefont, 12, "bold"),
+                                         lmargin1=lmargin(tag, width),
+                                         lmargin2=lmargin(tag, width),
+                                         rmargin=rmargin(tag, width))
+            else:
+                text_entry.tag_configure(tag, font=(thefont, 12),
+                                         lmargin1=lmargin(tag, width),
+                                         lmargin2=lmargin(tag, width),
+                                         rmargin=rmargin(tag, width))
 
         # Modifiers
         text_entry.tag_configure("centered_text", justify="center")
@@ -365,7 +414,7 @@ class Application(Frame):
         next_line_end_idx = str(line_no + 1) + ".end"
         start = str(line_no) +".0"
         end =  str(line_no) + ".end"
-        pos = text_entry.search(r'^[A-Z ]+:$', start, regexp=True, stopindex=end)
+        pos = text_entry.search(r'(^>.*[^<]$)|([A-Z ]+:$)', start, regexp=True, stopindex=end)
         if not pos:
             return
         if (not text_entry.tag_names(index=start) and
@@ -499,6 +548,7 @@ class Application(Frame):
 
     def process_text_new(self, event):
         text_entry = self.containing_frame.writing_frame.text_entry
+
         new_line_count = text_entry.index(END)
         new_line_count = int(new_line_count[0:new_line_count.index(".")])
 
@@ -570,7 +620,6 @@ class Application(Frame):
             return 'C'
         return 'L'
 
-
     def pdf(self):
         if 0:
             self.pdf_fpdf()
@@ -581,7 +630,7 @@ class Application(Frame):
         from reportlab.lib.enums import TA_CENTER
         from reportlab.lib.pagesizes import letter
         from reportlab.lib.fonts import addMapping
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Frame, PageTemplate, BaseDocTemplate
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.units import inch
         from reportlab.platypus.doctemplate import Indenter
@@ -605,7 +654,6 @@ class Application(Frame):
         pdfmetrics.registerFont(TTFont('Courier Prime Italic', 'CourierPrimeItalic.ttf'))
         pdfmetrics.registerFont(TTFont('Courier Prime Bold Italic', 'CourierPrimeBoldItalic.ttf'))
 
-
         addMapping('Courier Prime', 0, 0, "Courier Prime") #normal
         addMapping('Courier Prime', 0, 1, "Courier Prime Italic") #italic
         addMapping('Courier Prime', 1, 0, "Courier Prime Bold") #bold
@@ -613,44 +661,59 @@ class Application(Frame):
 
         text_entry = self.containing_frame.writing_frame.text_entry
 
-        doc = SimpleDocTemplate("script2.pdf",pagesize=letter,
-                                rightMargin=1*inch,leftMargin=1.5*inch,
-                                topMargin=inch,bottomMargin=inch)
+        pagesize = letter
+        F=Frame(0,0,pagesize[0],pagesize[1],
+                leftPadding=1.5*inch,
+                bottomPadding=1*inch,
+                rightPadding=1*inch,
+                topPadding=1*inch,
+                showBoundary=False)
+        PT = PageTemplate(id="Notecard", frames=[F,])
+        doc = BaseDocTemplate("script2.pdf",
+                              pageTemplates=[PT,],
+                              pagesize=pagesize,
+                              showBoundary=False,
+                              leftMargin=1.5*inch,
+                              rightMargin=1*inch,
+                              topMargin=1*inch,
+                              bottomMargin=1*inch,
+                              allowSplitting=1)
 
         styles=getSampleStyleSheet()
+        fontsize = 12
         styles.add(ParagraphStyle(name='Standard',
                                   fontName='Courier Prime',
-                                  fontSize=12,
+                                  fontSize=fontsize,
                                   leading=12))
 
         styles.add(ParagraphStyle(name='scene_heading',
                                   fontName='Courier Prime',
-                                  fontSize=12,
+                                  fontSize=fontsize,
                                   leading=12))
 
         styles.add(ParagraphStyle(name='character',
                                   fontName='Courier Prime',
-                                  fontSize=12,
+                                  fontSize=fontsize,
                                   leading=12))
 
         styles.add(ParagraphStyle(name='parenthetical',
                                   fontName='Courier Prime',
-                                  fontSize=12,
+                                  fontSize=fontsize,
                                   leading=12))
 
         styles.add(ParagraphStyle(name='dialogue',
                                   fontName='Courier Prime',
-                                  fontSize=12,
+                                  fontSize=fontsize,
                                   leading=12))
 
         styles.add(ParagraphStyle(name='transition',
                                   fontName='Courier Prime',
-                                  fontSize=12,
+                                  fontSize=fontsize,
                                   leading=12))
 
         styles.add(ParagraphStyle(name='centered_text',
                                   fontName='Courier Prime',
-                                  fontSize=12,
+                                  fontSize=fontsize,
                                   leading=12,
                                   alignment=TA_CENTER))
 
@@ -808,7 +871,7 @@ class Application(Frame):
             frame.leftPadding=frame.rightPadding=frame.topPadding=frame.bottomPadding=0
             canv.saveState()
 
-        doc.build(structure, onFirstPage=my_page, onLaterPages=my_page)
+        doc.build(structure)
 
         # Pop up
         top = Toplevel()
@@ -890,7 +953,7 @@ class Application(Frame):
         button.pack()
 
     def buildWidgets(self):
-        self.containing_frame = Frame(self)
+        self.containing_frame = Frame(self, width=935)
         self.containing_frame.writing_frame = WritingFrame(self.containing_frame)
 
         text_entry = self.containing_frame.writing_frame.text_entry
@@ -920,6 +983,7 @@ if __name__ == "__main__":
     root = Tk()
     thefont = "Courier Prime" if "Courier Prime" in font.families() and sys.platform.startswith("win32") else "Courier New"
     app = Application(master=root)
+    app.bind("<Configure>", app.configure_tags_helper)
     app.master.title("Scripter")
     app.master.minsize(400, 400)
 #    profile.run('app.mainloop()')
